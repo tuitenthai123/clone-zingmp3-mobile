@@ -3,6 +3,7 @@ import { View,Text,StyleSheet,SafeAreaView,StatusBar,Dimensions,Image, ImageSour
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
 import Carousel from 'react-native-reanimated-carousel';
+import axios from 'axios';
 
 const index = () => {
 
@@ -15,14 +16,26 @@ interface BannerItem {
 
   const width = Dimensions.get('window').width;
   const [Banner, setBanner] = useState<BannerItem[]>([])
+  const [goiy, setgoiy] = useState([])
   useEffect(() => {
     const getHome = async () => {
       try {
         const response = await fetch(
           'https://backendbaocaoweb.vercel.app/api/home',
         );
+        const responsegoiy = await axios.get(
+          'https://c381-167-235-8-252.ngrok-free.app/api/getGoiy',
+          {
+            headers: {
+              "Access-Control-Allow-Origin":"*",
+              "ngrok-skip-browser-warning": "true"
+            }
+          }
+        );
         const json = await response.json();
         setBanner(json.data.items[0].items)
+        setgoiy(responsegoiy.data?.document?.data?.items); 
+        console.log(responsegoiy)
       } catch (error) {
         console.error(error);
       }
@@ -76,7 +89,9 @@ interface BannerItem {
               </View>
       {/* gợi ý bài hát */}
               <ScrollView horizontal={true} style={style.scrollView}>
-
+                  <Text>
+                    heheh
+                  </Text>
               </ScrollView>     
             </View>
           </SafeAreaView>
