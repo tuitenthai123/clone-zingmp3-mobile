@@ -1,9 +1,13 @@
 import React,{useState,useEffect} from 'react'
-import { View,Text,StyleSheet,SafeAreaView,StatusBar,Dimensions,Image, ImageSourcePropType, ScrollView} from 'react-native'
+import { View,Text,StyleSheet,SafeAreaView,StatusBar,Dimensions,Image, ScrollView,TouchableOpacity} from 'react-native'
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import Carousel from 'react-native-reanimated-carousel';
 import axios from 'axios';
+import moment from 'moment';
+import "moment/locale/vi"
+
 
 const index = () => {
 
@@ -14,17 +18,65 @@ interface BannerItem {
   encodeId:string;
 }
 
+interface Recommentperson {
+  encodeId:string;
+  title:string;
+  artistsNames:string;
+  thumbnail:string;
+  thumbnailM:string;
+  releaseDate: number;
+}
+
+interface Hubitem{
+  cover:string;
+  description:string;
+  encodeId:string;
+  thumbnail:string;
+  thumbnailHasText:string;
+  thumbnailR:string;
+  title:string;
+}
+
+interface Recommentnewsong {
+  encodeId: string;
+  title: string;
+  artistsNames: string;
+  thumbnail: string;
+  thumbnailM: string;
+  releaseDate: number;
+}
+
+interface newsong {
+  vPop: Recommentnewsong[];
+  others:Recommentnewsong[];
+  all:Recommentnewsong[];
+}
+
+
+
   const width = Dimensions.get('window').width;
   const [Banner, setBanner] = useState<BannerItem[]>([])
-  const [goiy, setgoiy] = useState([])
+  const [goiy, setgoiy] = useState<Recommentperson[]>([])
+  const [hub, sethub] = useState<Hubitem[]>([])
+  const [newsongData, setNewsongData] = useState<Recommentnewsong[]>([]);
+  const [newsong, setNewsong] = useState<newsong | null>(null); // Đổi tên biến
+  const [columns, setColumns] = useState<Recommentperson[][]>([]);
+  const [columnsnewsong, setColumnsnewsong] = useState<Recommentperson[][]>([]);
+  const [selectedButton, setSelectedButton] = useState<string>('Tất cả');
+
+  const sliceArrayIntoChunks = <T,>(array: T[], chunkSize: number): T[][] => {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      result.push(array.slice(i, i + chunkSize));
+    }
+    return result;
+  };
+
   useEffect(() => {
     const getHome = async () => {
       try {
-        const response = await fetch(
-          'https://backendbaocaoweb.vercel.app/api/home',
-        );
-        const responsegoiy = await axios.get(
-          'https://c381-167-235-8-252.ngrok-free.app/api/getGoiy',
+        const responsehome =  await axios.get(
+          'https://1331-167-235-8-252.ngrok-free.app/api/getHome',
           {
             headers: {
               "Access-Control-Allow-Origin":"*",
@@ -32,24 +84,86 @@ interface BannerItem {
             }
           }
         );
-        const json = await response.json();
-        setBanner(json.data.items[0].items)
-        setgoiy(responsegoiy.data?.document?.data?.items); 
-        console.log(responsegoiy)
+        const responsegoiy = await axios.get(
+          'https://1331-167-235-8-252.ngrok-free.app/api/getGoiy',
+          {
+            headers: {
+              "Access-Control-Allow-Origin":"*",
+              "ngrok-skip-browser-warning": "true"
+            }
+          }
+        );
+        const responsehub = await axios.get(
+          'https://1331-167-235-8-252.ngrok-free.app/api/getHub',
+          {
+            headers: {
+              "Access-Control-Allow-Origin":"*",
+              "ngrok-skip-browser-warning": "true"
+            }
+          }
+        );
+        setColumns(sliceArrayIntoChunks(responsegoiy.data, 3));
+        setColumnsnewsong(sliceArrayIntoChunks(responsehome?.data?.data?.items[2]?.items.all, 3));
+        const homeData = responsehome.data?.data?.items[2]?.items;
+        setNewsongData(homeData); // Set dữ liệu cho mảng
+        setNewsong( homeData );
+        setNewsongData(responsehome?.data?.data?.items[2]?.items)
+        sethub(responsehub.data?.data?.featured?.items);
+        setBanner(responsehome?.data?.data?.items[0]?.items);
+        setgoiy(responsegoiy.data); 
       } catch (error) {
         console.error(error);
       }
     };
-    getHome()
+    getHome();
   }, [])
+
+  const handlelammoigoiy = async () => {
+    const responsegoiy = await axios.get(
+      'https://1331-167-235-8-252.ngrok-free.app/api/getGoiy',
+      {
+        headers: {
+          "Access-Control-Allow-Origin":"*",
+          "ngrok-skip-browser-warning": "true"
+        }
+      }
+    );
+    console.log(responsegoiy)
+    setColumns(sliceArrayIntoChunks(responsegoiy.data, 3));
+  }
+
+  const handlerendervietnamsong = () => {
+
+    setSelectedButton('Việt Nam')
+
+    if(newsong){
+
+      setColumnsnewsong(sliceArrayIntoChunks(newsong.vPop, 3));
+    }
+  }
+  const handlerenderorthersong = () => {
+    setSelectedButton('Quốc tế')
+    if(newsong){
+
+      setColumnsnewsong(sliceArrayIntoChunks(newsong.others, 3));
+    }
+  }
+  const handlerenderallsong = () => {
+    setSelectedButton('Tất cả')
+    if(newsong){
+
+      setColumnsnewsong(sliceArrayIntoChunks(newsong.all, 3));
+    }
+  }
+
   return (
-    <ScrollView>
-      <SafeAreaView style={{flex:1,marginTop:StatusBar.currentHeight}}>
+    <SafeAreaView style={{flex:1,marginTop:StatusBar.currentHeight}}>
+      <ScrollView>
             <View>
               <View style={{
                 flexDirection:'row',
                 justifyContent:"space-between",
-                gap:10,
+                gap:5,
                 padding:10,
                 alignItems:'center',
               }}>
@@ -64,7 +178,7 @@ interface BannerItem {
                 </View>
               </View>
     
-    {/* banner */}
+{/* banner */}
               <View style={{marginTop:6}}>
                 <Carousel
                     data={Banner}
@@ -74,7 +188,7 @@ interface BannerItem {
                     autoPlay={true}
                     scrollAnimationDuration={1000}
                     mode='parallax'
-                    renderItem={({ index,item }) => (
+                    renderItem={({ item }) => (
                             <View
                                 style={{
                                   flex:1,
@@ -82,31 +196,248 @@ interface BannerItem {
                                     justifyContent: 'center',
                                 }}
                             >
-                                <Image style={style.tinyLogo} source={{uri: item.banner,}}/>
+                                <Image style={style.tinyBanner} source={{uri: item.banner,}}/>
                             </View>
                     )}
                   />
               </View>
-      {/* gợi ý bài hát */}
+{/* gợi ý bài hát */}
+              <View style={{marginLeft:6,marginRight:6}}>
+                <View style={{flexDirection:"row" , alignItems:'center',justifyContent: 'space-between',padding:5}}>
+                  <View>
+                    <Text style={style.Titlesmall}>Bắt đầu nghe từ một bài hát</Text>
+                    <Text style={style.Title} >Gợi ý cho bạn</Text>
+                  </View>
+                  <TouchableOpacity activeOpacity={0.6} style={style.button}>
+                    <Text style={style.buttonText} onPress={handlelammoigoiy}>Làm mới</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>           
+             
               <ScrollView horizontal={true} style={style.scrollView}>
-                  <Text>
-                    heheh
-                  </Text>
-              </ScrollView>     
+                {columns.map((column, columnIndex) => (
+                  <View key={columnIndex} style={style.column}>
+                    {column.map((item, index) => (
+                      <View key={index} style={style.itemContainer}>
+                        <View style={style.row}>
+                        <Image style={style.coverimg} source={{uri: item.thumbnail,}}/>
+                          <View style={style.textContainer}>
+                          <Text style={style.title} numberOfLines={1} ellipsizeMode="tail">
+                      {item.title}
+                    </Text>
+                    <Text style={style.artist} numberOfLines={1} ellipsizeMode="tail">
+                      {item.artistsNames}
+                    </Text>
+                          </View>
+                        </View>
+                        <View><Entypo name="dots-three-vertical" size={18} color="#9fa1a0" /></View>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
+{/* chủ đề và thể loại */}
+              <View style={{marginLeft:6,marginRight:6, padding:5,alignItems:'center',flexDirection:'row',gap:6}}>
+                  <Text style={style.Title}>Chủ đề & thể loại</Text><AntDesign style={{marginTop:5}} name="right" size={20} color="black" />
+              </View>
+
+              <ScrollView horizontal={true} style={style.scrollView}>
+                {hub.map((column, columnIndex) => (
+                <View key={columnIndex} style={style.columnhub}>
+                  <Image style={style.coverimghub} source={{uri: column.thumbnailHasText}}/>
+                </View>
+                ))}
+              </ScrollView>
+{/* Mới Phát Hành */}
+              <View style={{marginLeft:6,marginRight:6,marginTop:20, padding:5,alignItems:'center',flexDirection:'row',gap:6}}>
+                  <Text style={style.Title}>Mới phát hành</Text><AntDesign style={{marginTop:5}} name="right" size={20} color="black" />
+              </View>
+              <View style={{ marginLeft: 6,marginBottom:10,marginTop:10, flexDirection: 'row', gap: 5 }}>
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={[
+                    style.buttonnewsong,
+                    selectedButton === 'Tất cả' ? style.selectedButton : null,
+                  ]}
+                  onPress={handlerenderallsong }
+                >
+                  <Text style={[
+                    style.buttonText,
+                    selectedButton === 'Tất cả' ? style.selectedButtonText : null,
+                  ]}>Tất cả</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={[
+                    style.buttonnewsong,
+                    selectedButton === 'Việt Nam' ? style.selectedButton : null,
+                  ]}
+                  onPress={handlerendervietnamsong }
+                >
+                  <Text style={[
+                    style.buttonText,
+                    selectedButton === 'Việt Nam' ? style.selectedButtonText : null,
+                  ]}>Việt Nam</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  style={[
+                    style.buttonnewsong,
+                    selectedButton === 'Quốc tế' ? style.selectedButton : null,
+                  ]}
+                  onPress={handlerenderorthersong}
+                >
+                  <Text style={[
+                    style.buttonText,
+                    selectedButton === 'Quốc tế' ? style.selectedButtonText : null,
+                  ]}>Quốc tế</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView horizontal={true} style={style.scrollView}>
+                {columnsnewsong.map((column, columnIndex) => (
+                  <View key={columnIndex} style={style.column}>
+                    {column.map((item, index) => (
+                      <View key={index} style={style.itemContainer}>
+                        <View style={style.row}>
+                        <Image style={style.coverimg} source={{uri: item.thumbnail,}}/>
+                          <View style={style.textContainer}>
+                            <Text style={style.title} numberOfLines={1} ellipsizeMode="tail">
+                              {item.title}
+                            </Text>
+                            <Text style={style.artist} numberOfLines={1} ellipsizeMode="tail">
+                              {item.artistsNames}
+                            </Text>
+                            <Text style={style.artist} numberOfLines={1} ellipsizeMode="tail">
+                              {moment(item.releaseDate * 1000).fromNow()}
+                            </Text>
+                          </View>
+                        </View>
+                        <View><Entypo name="dots-three-vertical" size={18} color="#9fa1a0" /></View>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
+
             </View>
-          </SafeAreaView>
     </ScrollView>
-    
+  </SafeAreaView>
   )
 }
-const style = StyleSheet.create({ 
+
+const style = StyleSheet.create({
+  // layout 
   layoutheader:{
     flexDirection:'row',
     justifyContent:"space-between",
   },
+
+  tinyBanner: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 20, 
+    borderWidth: 1,
+    borderColor: '#ffffff', 
+  },
+
+  coverimg:{
+    width: 60,
+    height: 60,
+    resizeMode: 'cover',
+    borderRadius: 4, 
+    borderWidth: 1,
+  },
+
+  coverimghub:{
+    width: '100%',    
+    height: '100%',   
+    resizeMode: 'stretch',
+    borderRadius: 10,    
+  },
+
+
+  scrollView: {
+    marginLeft:10,marginTop:3,marginBottom:3
+  },
+
+  column: {
+    width: 300,
+    marginRight: 10,
+    gap:10,
+  },
+
+  columnhub: {
+    width: 145,   
+    height: 80,   
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderRadius: 10, 
+  },
+
+  itemContainer: {
+    padding:2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    marginRight:20
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  button: {
+    backgroundColor: 'white',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth:1,
+    borderColor:"#d7dbd9",
+  },
+
+  buttonnewsong: {
+    backgroundColor: 'white',
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth:1,
+    borderColor:"#d7dbd9",
+  },
+
+  selectedButton: {
+    backgroundColor: '#8e44ad',  // Màu tím khi nút được chọn
+    borderColor: '#8e44ad',
+  },
+
+  // element
+  textContainer: {
+    flex:1,
+    marginLeft: 10,
+  },
+
   Title:{
     fontSize:25,
     fontWeight:'700',
+  },
+
+  Titlesmall:{
+    color:"#9fa1a0",
+    fontSize:15,
+    letterSpacing:-1,
+    fontWeight:'400',
+  },
+
+  selectedButtonText: {
+    color: 'white',  // Màu chữ khi nút được chọn
   },
   congcu:{
     alignItems:"center",
@@ -115,26 +446,23 @@ const style = StyleSheet.create({
     flexDirection:'row',
     gap:20,
   },
-  tinyLogo: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-    borderRadius: 20, 
-    borderWidth: 1,
-    borderColor: '#ffffff', 
-  },
-  scrollView: {
-    marginTop: 50,
-  },
-  box: {
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
+
   text: {
     color: 'white',
+  },
+
+  buttonText: {
+    color: 'black',
+    fontSize: 16,
+  },
+ 
+  title: {
+    fontWeight: '600',
+  },
+  artist: {
+    fontWeight: '400',
+    color: '#9fa1a0',
+    fontSize: 12,
   },
 })
 
