@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { View,Text,SafeAreaView,StatusBar } from 'react-native';
 import React from 'react';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -11,11 +12,13 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <SafeAreaView style={{flex:1, marginTop:StatusBar.currentHeight}}>
       <Tabs
           screenOptions={{
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
             headerShown: false,
           }}>
+
           <Tabs.Screen
             name="index"
             options={{
@@ -63,5 +66,10 @@ export default function TabLayout() {
             }}
           />         
         </Tabs>
+        {/* <View style={{position:"absolute",left:5,right:5,bottom:50,flexDirection:"row", alignItems:'center',padding:8, backgroundColor:"#252525",borderRadius:12,paddingVertical:10}}>
+          <Text style={{color:"white"}}>conmeo</Text>
+        </View> */}
+    </SafeAreaView>
+     
   );
 }
